@@ -1,0 +1,21 @@
+﻿name: Share trend poll
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Poll TravAi share trend
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "CRON_SECRET mangler"
+            exit 1
+          fi
+          curl -fsS --max-time 90 \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "https://trav-innsamling.vercel.app/api/cron/share-trend"
