@@ -1,18 +1,16 @@
 name: Share trend poll
 on:
   schedule:
-    # Kick often; one long runner covers gaps when schedule is delayed
-    - cron: "*/15 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 concurrency:
   group: share-trend-poll
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   poll:
     runs-on: ubuntu-latest
-    timeout-minutes: 195
     steps:
-      - name: Poll TravAi share trend every 5 minutes
+      - name: Poll TravAi share trend
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
@@ -21,18 +19,6 @@ jobs:
             echo "CRON_SECRET mangler"
             exit 1
           fi
-          # Cover ~3 hours so sparse GH schedules still leave dense samples
-          end=$((SECONDS + 3 * 60 * 60 - 60))
-          n=0
-          while [ "$SECONDS" -lt "$end" ]; do
-            n=$((n + 1))
-            echo "poll #$n $(date -u +%H:%M:%S)"
-            curl -fsS --max-time 100 \
-              -H "Authorization: Bearer ${CRON_SECRET}" \
-              "https://trav-innsamling.vercel.app/api/cron/share-trend?sync=1" \
-              || echo "poll failed (continues)"
-            if [ "$SECONDS" -ge "$end" ]; then
-              break
-            fi
-            sleep 300
-          done
+          curl -fsS --max-time 100 \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "https://trav-innsamling.vercel.app/api/cron/share-trend?sync=1"
