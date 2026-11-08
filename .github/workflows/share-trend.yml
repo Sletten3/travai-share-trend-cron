@@ -1,4 +1,4 @@
-﻿name: Share trend poll
+name: Share trend poll
 on:
   schedule:
     - cron: "*/5 * * * *"
@@ -16,6 +16,6 @@ jobs:
             echo "CRON_SECRET mangler"
             exit 1
           fi
-          curl -fsS --max-time 90 \
+          curl -fsS --max-time 100 \
             -H "Authorization: Bearer ${CRON_SECRET}" \
-            "https://trav-innsamling.vercel.app/api/cron/share-trend"
+            "https://trav-innsamling.vercel.app/api/cron/share-trend?sync=1"
