@@ -1,18 +1,22 @@
 name: Share trend poll
+
 on:
   schedule:
-    # Re-kick every 2h; each run samples every 5 min for ~2h (no PC needed)
-    - cron: "5 */2 * * *"
+    # Single-shot every 5 minutes. Do NOT use a multi-hour loop with a shared
+    # concurrency queue — that piled up delayed kicks and left real gaps.
+    - cron: "*/5 * * * *"
   workflow_dispatch:
+
 concurrency:
   group: share-trend-poll
-  cancel-in-progress: false
+  cancel-in-progress: true
+
 jobs:
   poll:
     runs-on: ubuntu-latest
-    timeout-minutes: 125
+    timeout-minutes: 3
     steps:
-      - name: Poll TravAi share trend every 5 minutes
+      - name: Poll TravAi share trend
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
@@ -21,17 +25,7 @@ jobs:
             echo "CRON_SECRET mangler"
             exit 1
           fi
-          end=$((SECONDS + 2 * 60 * 60 - 30))
-          n=0
-          while [ "$SECONDS" -lt "$end" ]; do
-            n=$((n + 1))
-            echo "poll #$n $(date -u +%H:%M:%S)"
-            curl -fsS --max-time 100 \
-              -H "Authorization: Bearer ${CRON_SECRET}" \
-              "https://trav-innsamling.vercel.app/api/cron/share-trend?sync=1" \
-              || echo "poll failed (continues)"
-            if [ "$SECONDS" -ge "$end" ]; then
-              break
-            fi
-            sleep 300
-          done
+          echo "poll $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          curl -fsS --max-time 100 \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "https://trav-innsamling.vercel.app/api/cron/share-trend?sync=1"
